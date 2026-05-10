@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Gramadóir</string>
+    <string name="label_input">Iontráil do théacs / Enter your text</string>
+    <string name="hint_enter_irish">Clóscríobh i nGaeilge anseo…</string>
+    <string name="button_check">Seiceáil / Check</string>
+    <string name="button_clear">Glan / Clear</string>
+    <string name="button_copy_text">Cóipeáil / Copy</string>
+    <string name="label_results">Torthaí / Results</string>
+    <string name="msg_no_errors">✓ Níl aon earráidí gramadaí! (No grammar errors found)</string>
+    <string name="msg_copied">Cóipeáladh an téacs! (Text copied!)</string>
+    <string name="msg_empty_text">Please enter some Irish text first.</string>
+    <string name="error_network">Network error. Please check your connection and try again.\n\nDetails: %1$s</string>
+    <string name="error_context_label">Context: </string>
+    <string name="error_word_label">Error: </string>
+</resources>
