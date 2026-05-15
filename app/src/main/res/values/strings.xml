@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">Gramadóir</string>
+    <string name="app_name">Gramadóir Andróideach</string>
     <string name="label_input">Iontráil do théacs / Enter your text</string>
     <string name="hint_enter_irish">Clóscríobh i nGaeilge anseo…</string>
     <string name="button_check">Seiceáil / Check</string>
