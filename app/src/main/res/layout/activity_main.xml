@@ -88,24 +88,40 @@
                         <com.google.android.material.button.MaterialButton
                             android:id="@+id/buttonClear"
                             style="@style/Widget.Material3.Button.TextButton"
-                            android:layout_width="wrap_content"
+                            android:layout_width="0dp"
                             android:layout_height="wrap_content"
+                            android:layout_weight="1"
                             android:text="@string/button_clear"
-                            android:layout_marginEnd="8dp"/>
+                            android:textSize="12sp"
+                            app:iconPadding="4dp"/>
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/buttonTranslate"
+                            style="@style/Widget.Material3.Button.TonalButton"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:layout_marginStart="6dp"
+                            android:text="@string/button_translate"
+                            android:textSize="12sp"
+                            app:iconPadding="4dp"/>
 
                         <com.google.android.material.button.MaterialButton
                             android:id="@+id/buttonCheck"
-                            android:layout_width="wrap_content"
+                            android:layout_width="0dp"
                             android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:layout_marginStart="6dp"
                             android:text="@string/button_check"
-                            app:icon="@android:drawable/ic_menu_search"/>
+                            android:textSize="12sp"
+                            app:iconPadding="4dp"/>
 
                     </LinearLayout>
 
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
-            <!-- Loading indicator -->
+            <!-- Loading indicator for Gramadóir -->
             <com.google.android.material.progressindicator.LinearProgressIndicator
                 android:id="@+id/progressBar"
                 android:layout_width="match_parent"
@@ -200,6 +216,80 @@
                     android:textColor="?attr/colorOnErrorContainer"
                     android:textAppearance="?attr/textAppearanceBodyMedium"/>
 
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- Loading indicator for translation -->
+            <com.google.android.material.progressindicator.LinearProgressIndicator
+                android:id="@+id/progressBarTranslation"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:layout_marginBottom="8dp"
+                android:visibility="gone"
+                app:trackCornerRadius="4dp"
+                android:indeterminate="true"/>
+
+            <!-- Box 2: Translation card (hidden until user hits Translate) -->
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/cardTranslation"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:visibility="gone"
+                app:cardElevation="2dp"
+                app:cardCornerRadius="12dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="12dp">
+
+                    <!-- Header row: label + Copy button -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical"
+                        android:layout_marginBottom="8dp">
+
+                        <TextView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="@string/label_translation"
+                            android:textAppearance="?attr/textAppearanceLabelLarge"
+                            android:textColor="?attr/colorPrimary"/>
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/buttonClearTranslation"
+                            style="@style/Widget.Material3.Button.TextButton"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="@string/button_clear"
+                            android:layout_marginEnd="8dp"/>
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/buttonCopyTranslation"
+                            style="@style/Widget.Material3.Button.TonalButton"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="@string/button_copy_text"
+                            app:icon="@android:drawable/ic_menu_share"/>
+
+                    </LinearLayout>
+
+                    <!-- The translated English text -->
+                    <TextView
+                        android:id="@+id/textTranslation"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:textAppearance="?attr/textAppearanceBodyLarge"
+                        android:padding="8dp"
+                        android:textIsSelectable="true"
+                        android:lineSpacingMultiplier="1.3"/>
+
+                </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
         </LinearLayout>
