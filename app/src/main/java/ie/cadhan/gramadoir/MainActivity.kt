@@ -105,11 +105,7 @@ class MainActivity : AppCompatActivity() {
             binding.textTranslation.text = ""
         }
 
-        // --- Button: Copy translation to clipboard ---
-        binding.buttonCopyTranslation.setOnClickListener {
-            val text = binding.textTranslation.text?.toString() ?: ""
-            copyToClipboard(text)
-        }
+
     }
 
     // -----------------------------------------------------------------------
