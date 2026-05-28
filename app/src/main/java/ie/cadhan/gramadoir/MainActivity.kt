@@ -3,10 +3,14 @@ package ie.cadhan.gramadoir
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
+import android.content.Intent
 import android.os.Bundle
+import android.view.Menu
+import android.view.MenuItem
 import android.view.View
 import android.view.inputmethod.InputMethodManager
 import android.widget.Toast
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
 import com.google.gson.Gson
@@ -18,7 +22,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import okhttp3.FormBody
-import okhttp3.HttpUrl.Companion.toHttpUrl
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import java.io.IOException
@@ -42,6 +45,7 @@ class MainActivity : AppCompatActivity() {
 
     // ViewBinding gives us type-safe access to every view in activity_main.xml
     private lateinit var binding: ActivityMainBinding
+    private lateinit var historyManager: HistoryManager
 
     // OkHttp client for making HTTP requests; we reuse one instance for efficiency
     private val httpClient = OkHttpClient.Builder()
@@ -49,8 +53,27 @@ class MainActivity : AppCompatActivity() {
         .readTimeout(15, TimeUnit.SECONDS)
         .build()
 
-    // Gson for parsing the JSON response from the APIs
+    // Gson for parsing the JSON responses from the APIs
     private val gson = Gson()
+
+    // Launcher for HistoryActivity — receives the selected text back when
+    // the user taps "Use" on a history item
+    private val historyLauncher = registerForActivityResult(
+        ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        if (result.resultCode == RESULT_OK) {
+            val selectedText = result.data?.getStringExtra(HistoryActivity.EXTRA_SELECTED_TEXT)
+            if (!selectedText.isNullOrEmpty()) {
+                // Load the selected text into Box 1
+                binding.editTextIrish.setText(selectedText)
+                // Clear any previous results
+                binding.cardResults.visibility = View.GONE
+                binding.cardError.visibility = View.GONE
+                binding.cardTranslation.visibility = View.GONE
+                binding.containerErrors.removeAllViews()
+            }
+        }
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -58,11 +81,11 @@ class MainActivity : AppCompatActivity() {
         // Inflate the layout and set it as the content view
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
-
-        // Set the toolbar as our action bar
         setSupportActionBar(binding.toolbar)
 
-        // --- Button: Check grammar (Box 1) ---
+        historyManager = HistoryManager(this)
+
+        // --- Button: Check grammar ---
         binding.buttonCheck.setOnClickListener {
             val text = binding.editTextIrish.text?.toString()?.trim() ?: ""
             if (text.isEmpty()) {
@@ -93,10 +116,17 @@ class MainActivity : AppCompatActivity() {
             translateText(text)
         }
 
-        // --- Button: Copy original Irish text to clipboard ---
+        // --- Button: Copy Irish text to clipboard and save to history ---
         binding.buttonCopyText.setOnClickListener {
-            val text = binding.editTextIrish.text?.toString() ?: ""
+            val text = binding.editTextIrish.text?.toString()?.trim() ?: ""
+            if (text.isEmpty()) {
+                Toast.makeText(this, getString(R.string.msg_empty_text), Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
+            }
             copyToClipboard(text)
+            // Save to history when the user copies their Irish text
+            historyManager.saveItem(text)
+            Toast.makeText(this, getString(R.string.msg_saved_to_history), Toast.LENGTH_SHORT).show()
         }
 
         // --- Button: Clear translation (Box 2) ---
@@ -104,8 +134,27 @@ class MainActivity : AppCompatActivity() {
             binding.cardTranslation.visibility = View.GONE
             binding.textTranslation.text = ""
         }
+    }
 
+    // -----------------------------------------------------------------------
+    // TOOLBAR: Inflate the menu into the toolbar
+    // -----------------------------------------------------------------------
+    override fun onCreateOptionsMenu(menu: Menu): Boolean {
+        menuInflater.inflate(R.menu.menu_main, menu)
+        return true
+    }
 
+    // -----------------------------------------------------------------------
+    // TOOLBAR: Handle toolbar menu item clicks
+    // -----------------------------------------------------------------------
+    override fun onOptionsItemSelected(item: MenuItem): Boolean {
+        return when (item.itemId) {
+            R.id.action_history -> {
+                historyLauncher.launch(Intent(this, HistoryActivity::class.java))
+                true
+            }
+            else -> super.onOptionsItemSelected(item)
+        }
     }
 
     // -----------------------------------------------------------------------
@@ -116,11 +165,11 @@ class MainActivity : AppCompatActivity() {
         binding.cardResults.visibility = View.GONE
         binding.cardError.visibility = View.GONE
 
+        // lifecycleScope.launch runs on the main thread but lets us call
+        // withContext(Dispatchers.IO) to do network work off the main thread
         lifecycleScope.launch {
             try {
-                val errors = withContext(Dispatchers.IO) {
-                    callGramadoirApi(text)
-                }
+                val errors = withContext(Dispatchers.IO) { callGramadoirApi(text) }
                 showGrammarLoading(false)
                 displayGrammarResults(errors)
             } catch (e: IOException) {
@@ -150,14 +199,12 @@ class MainActivity : AppCompatActivity() {
             .build()
 
         val response = httpClient.newCall(request).execute()
-
-        if (!response.isSuccessful) {
-            throw IOException("Server returned HTTP ${response.code}")
-        }
+        if (!response.isSuccessful) throw IOException("Server returned HTTP ${response.code}")
 
         val responseBody = response.body?.string()
             ?: throw IOException("Empty response from server")
 
+        // Parse the JSON array into a list of GramadoirError objects
         val listType = object : TypeToken<List<GramadoirError>>() {}.type
         return gson.fromJson(responseBody, listType) ?: emptyList()
     }
@@ -173,9 +220,7 @@ class MainActivity : AppCompatActivity() {
             binding.textNoErrors.visibility = View.VISIBLE
         } else {
             binding.textNoErrors.visibility = View.GONE
-            for (error in errors) {
-                addErrorCard(error)
-            }
+            for (error in errors) addErrorCard(error)
         }
     }
 
@@ -184,7 +229,6 @@ class MainActivity : AppCompatActivity() {
     // -----------------------------------------------------------------------
     private fun addErrorCard(error: GramadoirError) {
         val itemBinding = ItemErrorBinding.inflate(layoutInflater, binding.containerErrors, false)
-
         itemBinding.textErrorMessage.text = error.msg
 
         // Gramadóir HTML-encodes some characters — decode the common ones
@@ -209,9 +253,7 @@ class MainActivity : AppCompatActivity() {
 
         lifecycleScope.launch {
             try {
-                val translation = withContext(Dispatchers.IO) {
-                    callMyMemoryApi(text)
-                }
+                val translation = withContext(Dispatchers.IO) { callMyMemoryApi(text) }
                 showTranslationLoading(false)
                 displayTranslation(translation)
             } catch (e: IOException) {
@@ -233,16 +275,10 @@ class MainActivity : AppCompatActivity() {
         val encodedText = URLEncoder.encode(text, "UTF-8")
         val url = "https://api.mymemory.translated.net/get?q=$encodedText&langpair=ga|en"
 
-        val request = Request.Builder()
-            .url(url)
-            .get()
-            .build()
-
+        val request = Request.Builder().url(url).get().build()
         val response = httpClient.newCall(request).execute()
 
-        if (!response.isSuccessful) {
-            throw IOException("Server returned HTTP ${response.code}")
-        }
+        if (!response.isSuccessful) throw IOException("Server returned HTTP ${response.code}")
 
         val responseBody = response.body?.string()
             ?: throw IOException("Empty response from server")
@@ -253,17 +289,13 @@ class MainActivity : AppCompatActivity() {
         val status = jsonObject.get("responseStatus")?.asInt
             ?: throw IOException("No status in response")
 
-        if (status != 200) {
-            throw IOException("Translation API returned status $status")
-        }
+        if (status != 200) throw IOException("Translation API returned status $status")
 
-        val translatedText = jsonObject
+        return jsonObject
             .getAsJsonObject("responseData")
             ?.get("translatedText")
             ?.asString
             ?: throw IOException("No translation in response")
-
-        return translatedText
     }
 
     // -----------------------------------------------------------------------
@@ -278,7 +310,6 @@ class MainActivity : AppCompatActivity() {
     // TRANSLATION: Shows a translation-specific error message
     // -----------------------------------------------------------------------
     private fun showTranslationError(message: String) {
-        // Reuse the existing error card for translation errors too
         binding.cardError.visibility = View.VISIBLE
         binding.textError.text = getString(R.string.error_translation, message)
     }
@@ -302,7 +333,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     // -----------------------------------------------------------------------
-    // Shows/hides the translation loading bar and disables the Translate button
+    // Shows/hides the translation loading bar and disables Translate button
     // -----------------------------------------------------------------------
     private fun showTranslationLoading(loading: Boolean) {
         binding.progressBarTranslation.visibility = if (loading) View.VISIBLE else View.GONE
@@ -322,8 +353,6 @@ class MainActivity : AppCompatActivity() {
     // -----------------------------------------------------------------------
     private fun hideKeyboard() {
         val imm = getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
-        currentFocus?.let {
-            imm.hideSoftInputFromWindow(it.windowToken, 0)
-        }
+        currentFocus?.let { imm.hideSoftInputFromWindow(it.windowToken, 0) }
     }
 }

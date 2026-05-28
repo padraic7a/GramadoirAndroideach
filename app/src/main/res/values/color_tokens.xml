@@ -1,8 +1,0 @@
-<?xml version="1.0" encoding="utf-8"?>
-<resources>
-    <!-- Irish green-inspired primary palette -->
-    <color name="md_theme_primary">#1B6B2F</color>
-    <color name="md_theme_on_primary">#FFFFFF</color>
-    <color name="md_theme_primary_container">#A8F5B5</color>
-    <color name="md_theme_on_primary_container">#002109</color>
-</resources>

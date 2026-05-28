@@ -7,13 +7,23 @@
     <string name="button_clear">Glan / Clear</string>
     <string name="button_translate">Aistrigh / Translate</string>
     <string name="button_copy_text">Cóipeáil / Copy</string>
+    <string name="button_use">Úsáid / Use</string>
+    <string name="button_delete">Scrios / Delete</string>
     <string name="label_results">Torthaí / Results</string>
     <string name="label_translation">Aistriúchán go Béarla / Translation to English</string>
     <string name="msg_no_errors">✓ Níl aon earráidí gramadaí! (No grammar errors found)</string>
     <string name="msg_copied">Cóipeáladh an téacs! (Text copied!)</string>
     <string name="msg_empty_text">Cuir isteach téacs Gaeilge ar dtús. / Please enter some Irish text first.</string>
+    <string name="msg_saved_to_history">Sábháladh sa stair! (Saved to history!)</string>
+    <string name="msg_history_empty">Níl aon stair ann fós.\nNo history yet.\n\nCopy some Irish text to save it here.</string>
+    <string name="msg_confirm_clear_all">An bhfuil tú cinnte? / Are you sure you want to clear all history?</string>
+    <string name="msg_confirm_delete">Scrios an mhír seo? / Delete this item?</string>
+    <string name="button_confirm">OK</string>
+    <string name="button_cancel">Cealaigh / Cancel</string>
     <string name="error_network">Earráid líonra. / Network error. Please check your connection and try again.\n\nDetails: %1$s</string>
     <string name="error_translation">Theip ar an aistriúchán. / Translation failed. Please try again.\n\nDetails: %1$s</string>
     <string name="error_context_label">Context: </string>
-    <string name="error_word_label">Error: </string>
+    <string name="title_history">Stair / History</string>
+    <string name="menu_history">Stair / History</string>
+    <string name="menu_clear_all">Glan Uile / Clear All</string>
 </resources>

@@ -16,7 +16,7 @@
         android:orientation="vertical"
         android:padding="12dp">
 
-        <!-- Error message -->
+        <!-- The grammar rule message e.g. "Lenition missing" -->
         <TextView
             android:id="@+id/textErrorMessage"
             android:layout_width="match_parent"
@@ -25,7 +25,7 @@
             android:textColor="?attr/colorError"
             android:layout_marginBottom="4dp"/>
 
-        <!-- The offending text in context -->
+        <!-- The surrounding sentence so the user knows where the error is -->
         <TextView
             android:id="@+id/textContext"
             android:layout_width="match_parent"
@@ -35,7 +35,7 @@
             android:fontFamily="monospace"
             android:layout_marginBottom="4dp"/>
 
-        <!-- The specific error word -->
+        <!-- The specific offending word/phrase -->
         <TextView
             android:id="@+id/textErrorWord"
             android:layout_width="wrap_content"
