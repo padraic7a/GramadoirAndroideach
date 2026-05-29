@@ -191,6 +191,7 @@ class MainActivity : AppCompatActivity() {
         val requestBody = FormBody.Builder()
             .add("teacs", text)
             .add("teanga", "en")
+            .add("cliant", "gramadóir andróidigh")
             .build()
 
         val request = Request.Builder()
