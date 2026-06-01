@@ -26,4 +26,17 @@
     <string name="title_history">Stair / History</string>
     <string name="menu_history">Stair / History</string>
     <string name="menu_clear_all">Glan Uile / Clear All</string>
+    <!-- About screen -->
+    <string name="title_about">Eolas / About</string>
+    <string name="menu_about">Eolas / About</string>
+    <string name="about_version">Leagan / Version 1.0</string>
+    <string name="about_intro">Placeholder text for now</string>
+    <string name="about_card_app_title">An App / The App</string>
+    <string name="about_card_app_body">Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris.</string>
+    <string name="about_card_apis_title">Na APIs / The APIs</string>
+    <string name="about_card_apis_body"> placeholder text for now</string>
+    <string name="about_card_licence_title">Ceadúnas / Licence</string>
+    <string name="about_card_licence_body">The source code is available at: github.com/padraic7a/gramadoir-androideach</string>
+    <string name="about_card_thanks_title">Buíochas / Thanks</string>
+    <string name="about_card_thanks_body">Placeholder text for now.</string>
 </resources>

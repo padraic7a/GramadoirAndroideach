@@ -153,6 +153,10 @@ class MainActivity : AppCompatActivity() {
                 historyLauncher.launch(Intent(this, HistoryActivity::class.java))
                 true
             }
+            R.id.action_about -> {
+                startActivity(Intent(this, AboutActivity::class.java))
+                true
+            }
             else -> super.onOptionsItemSelected(item)
         }
     }
