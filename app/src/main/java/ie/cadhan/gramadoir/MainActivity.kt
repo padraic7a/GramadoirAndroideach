@@ -187,8 +187,10 @@ class MainActivity : AppCompatActivity() {
     // GRAMADÓIR: Makes the actual HTTP POST to the Gramadóir API
     // Must be called from a background thread (via withContext(Dispatchers.IO))
     // -----------------------------------------------------------------------
+
     @Throws(IOException::class)
     private fun callGramadoirApi(text: String): List<GramadoirError> {
+
         // Build a form-encoded POST body:
         //   teacs  = the Irish text to check
         //   teanga = "en" means error messages returned in English
@@ -199,11 +201,13 @@ class MainActivity : AppCompatActivity() {
             .build()
 
         val request = Request.Builder()
-            .url("https://cadhan.com/api/gramadoir/1.0")
+            .url("https://246874.xyz/api/gramadoir/1.0")
+            .addHeader("X-Api-Key", BuildConfig.API_KEY)
             .post(requestBody)
             .build()
 
         val response = httpClient.newCall(request).execute()
+
         if (!response.isSuccessful) throw IOException("Server returned HTTP ${response.code}")
 
         val responseBody = response.body?.string()
@@ -213,6 +217,7 @@ class MainActivity : AppCompatActivity() {
         val listType = object : TypeToken<List<GramadoirError>>() {}.type
         return gson.fromJson(responseBody, listType) ?: emptyList()
     }
+
 
     // -----------------------------------------------------------------------
     // GRAMADÓIR: Displays the list of errors (or a "no errors" message)
