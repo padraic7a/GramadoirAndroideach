@@ -39,4 +39,11 @@
     <string name="about_card_licence_body">The source code is available at: github.com/padraic7a/gramadoir-androideach</string>
     <string name="about_card_thanks_title">Buíochas / Thanks</string>
     <string name="about_card_thanks_body">Placeholder text for now.</string>
+    <!-- Spelling check -->
+    <string name="button_spell">Litriú / Spell</string>
+    <string name="label_spelling">Litriú / Spelling</string>
+    <string name="msg_no_spelling_errors">✓ Níl aon earráidí litrithe! (No spelling errors found)</string>
+    <string name="spelling_error_label">Focal mícheart / Misspelled word: </string>
+    <string name="button_keep">Coimeád / Keep</string>
+    <string name="msg_spelling_complete">Seiceáil litrithe críochnaithe! (Spelling check complete)</string>
 </resources>

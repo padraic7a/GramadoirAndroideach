@@ -77,22 +77,25 @@
 
                     </com.google.android.material.textfield.TextInputLayout>
 
-                    <!-- Button row: Clear | Translate | Check -->
+                    <!-- Glan / Clear — slim outlined button on its own row -->
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/buttonClear"
+                        style="@style/Widget.Material3.Button.OutlinedButton"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="10dp"
+                        android:paddingTop="4dp"
+                        android:paddingBottom="4dp"
+                        android:text="@string/button_clear"
+                        android:textSize="11sp"/>
+
+                    <!-- Action button row: Translate | Spell | Check -->
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:orientation="horizontal"
-                        android:layout_marginTop="10dp"
+                        android:layout_marginTop="6dp"
                         android:gravity="end">
-
-                        <com.google.android.material.button.MaterialButton
-                            android:id="@+id/buttonClear"
-                            style="@style/Widget.Material3.Button.TextButton"
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:layout_weight="1"
-                            android:text="@string/button_clear"
-                            android:textSize="12sp"/>
 
                         <com.google.android.material.button.MaterialButton
                             android:id="@+id/buttonTranslate"
@@ -100,9 +103,18 @@
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
                             android:layout_weight="1"
-                            android:layout_marginStart="6dp"
                             android:text="@string/button_translate"
-                            android:textSize="12sp"/>
+                            android:textSize="11sp"/>
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/buttonSpell"
+                            style="@style/Widget.Material3.Button.TonalButton"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:layout_marginStart="6dp"
+                            android:text="@string/button_spell"
+                            android:textSize="11sp"/>
 
                         <com.google.android.material.button.MaterialButton
                             android:id="@+id/buttonCheck"
@@ -111,10 +123,9 @@
                             android:layout_weight="1"
                             android:layout_marginStart="6dp"
                             android:text="@string/button_check"
-                            android:textSize="12sp"/>
+                            android:textSize="11sp"/>
 
                     </LinearLayout>
-
                     <!-- Copy button: full width, below button row -->
                     <com.google.android.material.button.MaterialButton
                         android:id="@+id/buttonCopyText"
@@ -131,6 +142,61 @@
             <!-- Loading indicator for Gramadóir -->
             <com.google.android.material.progressindicator.LinearProgressIndicator
                 android:id="@+id/progressBar"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="8dp"
+                android:visibility="gone"
+                app:trackCornerRadius="4dp"
+                android:indeterminate="true"/>
+
+
+            <!-- Spelling results card -->
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/cardSpelling"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:visibility="gone"
+                app:cardElevation="2dp"
+                app:cardCornerRadius="12dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="12dp">
+
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginBottom="8dp"
+                        android:text="@string/label_spelling"
+                        android:textAppearance="?attr/textAppearanceLabelLarge"
+                        android:textColor="?attr/colorPrimary"/>
+
+                    <!-- No spelling errors message -->
+                    <TextView
+                        android:id="@+id/textNoSpellingErrors"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="@string/msg_no_spelling_errors"
+                        android:textAppearance="?attr/textAppearanceBodyLarge"
+                        android:textColor="@color/green_success"
+                        android:visibility="gone"
+                        android:padding="8dp"/>
+
+                    <!-- Spelling error container -->
+                    <LinearLayout
+                        android:id="@+id/containerSpelling"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"/>
+
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- Loading indicator for spelling -->
+            <com.google.android.material.progressindicator.LinearProgressIndicator
+                android:id="@+id/progressBarSpelling"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="8dp"

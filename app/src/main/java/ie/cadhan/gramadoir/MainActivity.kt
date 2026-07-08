@@ -13,11 +13,13 @@ import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
+import com.google.android.material.chip.Chip
 import com.google.gson.Gson
 import com.google.gson.JsonParser
 import com.google.gson.reflect.TypeToken
 import ie.cadhan.gramadoir.databinding.ActivityMainBinding
 import ie.cadhan.gramadoir.databinding.ItemErrorBinding
+import ie.cadhan.gramadoir.databinding.ItemSpellingBinding
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -39,6 +41,16 @@ data class GramadoirError(
 )
 
 // ---------------------------------------------------------------------------
+// Data model — represents a single GaelSpell spelling error
+// GaelSpell returns a JSON array of two-element arrays:
+// [ ["misspelled_word", ["suggestion1", "suggestion2", ...]], ... ]
+// ---------------------------------------------------------------------------
+data class SpellingError(
+    val word: String,               // The misspelled word
+    val suggestions: List<String>   // Ordered list of suggested corrections
+)
+
+// ---------------------------------------------------------------------------
 // MainActivity
 // ---------------------------------------------------------------------------
 class MainActivity : AppCompatActivity() {
@@ -56,6 +68,12 @@ class MainActivity : AppCompatActivity() {
     // Gson for parsing the JSON responses from the APIs
     private val gson = Gson()
 
+    // ---------------------------------------------------------------------------
+    // GaelSpell state — tracks the current step-through spelling correction session
+    // ---------------------------------------------------------------------------
+    private var spellingErrors: List<SpellingError> = emptyList()  // All errors from last check
+    private var currentSpellingIndex: Int = -1                      // Which error we're on (-1 = none)
+
     // Launcher for HistoryActivity — receives the selected text back when
     // the user taps "Use" on a history item
     private val historyLauncher = registerForActivityResult(
@@ -67,10 +85,7 @@ class MainActivity : AppCompatActivity() {
                 // Load the selected text into Box 1
                 binding.editTextIrish.setText(selectedText)
                 // Clear any previous results
-                binding.cardResults.visibility = View.GONE
-                binding.cardError.visibility = View.GONE
-                binding.cardTranslation.visibility = View.GONE
-                binding.containerErrors.removeAllViews()
+                clearAllResults()
             }
         }
     }
@@ -96,13 +111,10 @@ class MainActivity : AppCompatActivity() {
             checkGrammar(text)
         }
 
-        // --- Button: Clear Box 1 (also clears results and translation) ---
+        // --- Button: Clear everything ---
         binding.buttonClear.setOnClickListener {
             binding.editTextIrish.text?.clear()
-            binding.cardResults.visibility = View.GONE
-            binding.cardError.visibility = View.GONE
-            binding.cardTranslation.visibility = View.GONE
-            binding.containerErrors.removeAllViews()
+            clearAllResults()
         }
 
         // --- Button: Translate (Irish → English via MyMemory) ---
@@ -114,6 +126,17 @@ class MainActivity : AppCompatActivity() {
             }
             hideKeyboard()
             translateText(text)
+        }
+
+        // --- Button: Spell check via GaelSpell ---
+        binding.buttonSpell.setOnClickListener {
+            val text = binding.editTextIrish.text?.toString()?.trim() ?: ""
+            if (text.isEmpty()) {
+                Toast.makeText(this, getString(R.string.msg_empty_text), Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
+            }
+            hideKeyboard()
+            checkSpelling(text)
         }
 
         // --- Button: Copy Irish text to clipboard and save to history ---
@@ -162,6 +185,162 @@ class MainActivity : AppCompatActivity() {
     }
 
     // -----------------------------------------------------------------------
+    // GAELSPELL: Check spelling via API
+    // -----------------------------------------------------------------------
+    private fun checkSpelling(text: String) {
+        showSpellingLoading(true)
+        binding.cardSpelling.visibility = View.GONE
+        binding.cardError.visibility = View.GONE
+
+        // Reset step-through state
+        spellingErrors = emptyList()
+        currentSpellingIndex = -1
+
+        lifecycleScope.launch {
+            try {
+                val errors = withContext(Dispatchers.IO) { callGaelSpellApi(text) }
+                showSpellingLoading(false)
+                spellingErrors = errors
+                if (errors.isEmpty()) {
+                    // No spelling errors — show success message
+                    displayNoSpellingErrors()
+                } else {
+                    // Start step-through from first error
+                    currentSpellingIndex = 0
+                    displayCurrentSpellingError()
+                }
+            } catch (e: IOException) {
+                showSpellingLoading(false)
+                showNetworkError(e.message ?: "Unknown error")
+            }
+        }
+    }
+
+    // -----------------------------------------------------------------------
+    // GAELSPELL: Makes the actual HTTP POST to the GaelSpell API
+    // Must be called from a background thread (via withContext(Dispatchers.IO))
+    // GaelSpell returns a JSON array of two-element arrays:
+    // [ ["misspelled_word", ["suggestion1", "suggestion2"]], ... ]
+    // -----------------------------------------------------------------------
+    @Throws(IOException::class)
+    private fun callGaelSpellApi(text: String): List<SpellingError> {
+        val requestBody = FormBody.Builder()
+            .add("teacs", text)
+            .build()
+
+        val request = Request.Builder()
+            .url("https://246874.xyz/api/gaelspell/1.0")
+            .addHeader("X-Api-Key", BuildConfig.API_KEY)
+            .post(requestBody)
+            .build()
+
+        val response = httpClient.newCall(request).execute()
+        if (!response.isSuccessful) throw IOException("Server returned HTTP ${response.code}")
+
+        val responseBody = response.body?.string()
+            ?: throw IOException("Empty response from server")
+
+        // Parse the JSON array of [word, [suggestions]] pairs
+        val rawList = gson.fromJson(responseBody, List::class.java)
+        return rawList.map { item ->
+            @Suppress("UNCHECKED_CAST")
+            val pair = item as List<Any>
+            val word = pair[0] as String
+            val suggestions = (pair[1] as List<*>).map { it.toString() }
+            SpellingError(word, suggestions)
+        }
+    }
+
+    // -----------------------------------------------------------------------
+    // GAELSPELL: Shows the "no errors" message
+    // -----------------------------------------------------------------------
+    private fun displayNoSpellingErrors() {
+        binding.cardSpelling.visibility = View.VISIBLE
+        binding.containerSpelling.removeAllViews()
+        binding.textNoSpellingErrors.visibility = View.VISIBLE
+    }
+
+    // -----------------------------------------------------------------------
+    // GAELSPELL: Displays the current spelling error in the step-through
+    // Shows the misspelled word, suggestion chips, and a Keep button
+    // -----------------------------------------------------------------------
+    private fun displayCurrentSpellingError() {
+        if (currentSpellingIndex < 0 || currentSpellingIndex >= spellingErrors.size) {
+            // All errors stepped through — hide spelling card
+            binding.cardSpelling.visibility = View.GONE
+            Toast.makeText(
+                this,
+                getString(R.string.msg_spelling_complete),
+                Toast.LENGTH_SHORT
+            ).show()
+            return
+        }
+
+        val error = spellingErrors[currentSpellingIndex]
+
+        binding.cardSpelling.visibility = View.VISIBLE
+        binding.textNoSpellingErrors.visibility = View.GONE
+        binding.containerSpelling.removeAllViews()
+
+        // Inflate item_spelling.xml for this error
+        val itemBinding = ItemSpellingBinding.inflate(
+            layoutInflater, binding.containerSpelling, false
+        )
+
+        // Show the misspelled word
+        itemBinding.textMisspelledWord.text =
+            getString(R.string.spelling_error_label) + error.word
+
+        // Add a chip for each suggestion
+        error.suggestions.forEach { suggestion ->
+            val chip = Chip(this)
+            chip.text = suggestion
+            chip.isClickable = true
+            chip.isCheckable = false
+            chip.setOnClickListener {
+                // Replace the misspelled word in Box 1 with the chosen suggestion
+                replaceWordInText(error.word, suggestion)
+                // Move to the next error
+                currentSpellingIndex++
+                displayCurrentSpellingError()
+            }
+            itemBinding.chipGroupSuggestions.addView(chip)
+        }
+
+        // Add a "Keep" chip — leaves the word as-is and moves to next error
+        val keepChip = Chip(this)
+        keepChip.text = getString(R.string.button_keep)
+        keepChip.isClickable = true
+        keepChip.isCheckable = false
+        keepChip.chipBackgroundColor =
+            getColorStateList(android.R.color.darker_gray)
+        keepChip.setOnClickListener {
+            // Skip this error and move to the next one
+            currentSpellingIndex++
+            displayCurrentSpellingError()
+        }
+        itemBinding.chipGroupSuggestions.addView(keepChip)
+
+        binding.containerSpelling.addView(itemBinding.root)
+    }
+
+    // -----------------------------------------------------------------------
+    // GAELSPELL: Replaces the first occurrence of a misspelled word in Box 1
+    // with the chosen suggestion, preserving the rest of the text
+    // -----------------------------------------------------------------------
+    private fun replaceWordInText(misspelled: String, replacement: String) {
+        val currentText = binding.editTextIrish.text?.toString() ?: return
+        // Replace the first occurrence of the misspelled word (whole word match)
+        val updatedText = currentText.replaceFirst(
+            Regex("\\b${Regex.escape(misspelled)}\\b"),
+            replacement
+        )
+        binding.editTextIrish.setText(updatedText)
+        // Move cursor to end
+        binding.editTextIrish.setSelection(updatedText.length)
+    }
+
+    // -----------------------------------------------------------------------
     // GRAMADÓIR: API call — runs on a background thread, updates UI on main
     // -----------------------------------------------------------------------
     private fun checkGrammar(text: String) {
@@ -187,10 +366,8 @@ class MainActivity : AppCompatActivity() {
     // GRAMADÓIR: Makes the actual HTTP POST to the Gramadóir API
     // Must be called from a background thread (via withContext(Dispatchers.IO))
     // -----------------------------------------------------------------------
-
     @Throws(IOException::class)
     private fun callGramadoirApi(text: String): List<GramadoirError> {
-
         // Build a form-encoded POST body:
         //   teacs  = the Irish text to check
         //   teanga = "en" means error messages returned in English
@@ -207,7 +384,6 @@ class MainActivity : AppCompatActivity() {
             .build()
 
         val response = httpClient.newCall(request).execute()
-
         if (!response.isSuccessful) throw IOException("Server returned HTTP ${response.code}")
 
         val responseBody = response.body?.string()
@@ -217,7 +393,6 @@ class MainActivity : AppCompatActivity() {
         val listType = object : TypeToken<List<GramadoirError>>() {}.type
         return gson.fromJson(responseBody, listType) ?: emptyList()
     }
-
 
     // -----------------------------------------------------------------------
     // GRAMADÓIR: Displays the list of errors (or a "no errors" message)
@@ -332,6 +507,29 @@ class MainActivity : AppCompatActivity() {
         val clip = ClipData.newPlainText("Irish text", text)
         clipboard.setPrimaryClip(clip)
         Toast.makeText(this, getString(R.string.msg_copied), Toast.LENGTH_SHORT).show()
+    }
+
+    // -----------------------------------------------------------------------
+    // Clears all results — spelling, grammar, translation and error cards
+    // Called by the Clear button and when a history item is loaded
+    // -----------------------------------------------------------------------
+    private fun clearAllResults() {
+        binding.cardResults.visibility = View.GONE
+        binding.cardError.visibility = View.GONE
+        binding.cardTranslation.visibility = View.GONE
+        binding.cardSpelling.visibility = View.GONE
+        binding.containerErrors.removeAllViews()
+        binding.containerSpelling.removeAllViews()
+        spellingErrors = emptyList()
+        currentSpellingIndex = -1
+    }
+
+    // -----------------------------------------------------------------------
+    // Shows/hides the spelling loading bar and disables the Spell button
+    // -----------------------------------------------------------------------
+    private fun showSpellingLoading(loading: Boolean) {
+        binding.progressBarSpelling.visibility = if (loading) View.VISIBLE else View.GONE
+        binding.buttonSpell.isEnabled = !loading
     }
 
     // -----------------------------------------------------------------------
