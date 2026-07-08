@@ -74,6 +74,12 @@ class MainActivity : AppCompatActivity() {
     private var spellingErrors: List<SpellingError> = emptyList()  // All errors from last check
     private var currentSpellingIndex: Int = -1                      // Which error we're on (-1 = none)
 
+    // ---------------------------------------------------------------------------
+    // Translation constants
+    // ---------------------------------------------------------------------------
+    private val chunkSize = 400          // Max characters per MyMemory API call
+    private val dailyLimitWarning = 7500 // 25% of MyMemory's ~30,000 char daily limit
+
     // Launcher for HistoryActivity — receives the selected text back when
     // the user taps "Use" on a history item
     private val historyLauncher = registerForActivityResult(
@@ -156,6 +162,7 @@ class MainActivity : AppCompatActivity() {
         binding.buttonClearTranslation.setOnClickListener {
             binding.cardTranslation.visibility = View.GONE
             binding.textTranslation.text = ""
+            binding.textTranslationWarning.visibility = View.GONE
         }
     }
 
@@ -430,17 +437,64 @@ class MainActivity : AppCompatActivity() {
 
     // -----------------------------------------------------------------------
     // TRANSLATION: Calls MyMemory API (Irish → English)
+    // Batches long texts into chunks, reassembles the result
+    // Shows progress indicator for 3 or more chunks
+    // Shows daily limit warning for texts over 7,500 characters
     // -----------------------------------------------------------------------
     private fun translateText(text: String) {
         showTranslationLoading(true)
-        // Hide the previous translation while we fetch a new one
         binding.cardTranslation.visibility = View.GONE
+        binding.cardError.visibility = View.GONE
+
+        // Check if text exceeds 25% of MyMemory's daily limit
+        val showLimitWarning = text.length >= dailyLimitWarning
 
         lifecycleScope.launch {
             try {
-                val translation = withContext(Dispatchers.IO) { callMyMemoryApi(text) }
+                // Split text into chunks on sentence/word boundaries
+                val chunks = splitIntoChunks(text, chunkSize)
+                val totalChunks = chunks.size
+                val translations = mutableListOf<String>()
+                var partialError = false
+
+                for ((index, chunk) in chunks.withIndex()) {
+                    // Show progress toast for 3 or more chunks
+                    if (totalChunks >= 3) {
+                        withContext(Dispatchers.Main) {
+                            Toast.makeText(
+                                this@MainActivity,
+                                getString(
+                                    R.string.msg_translation_progress,
+                                    index + 1,
+                                    totalChunks
+                                ),
+                                Toast.LENGTH_SHORT
+                            ).show()
+                        }
+                    }
+
+                    try {
+                        val translation = withContext(Dispatchers.IO) {
+                            callMyMemoryApi(chunk)
+                        }
+                        translations.add(translation)
+                    } catch (e: IOException) {
+                        // One chunk failed — record partial error and stop
+                        partialError = true
+                        break
+                    }
+                }
+
                 showTranslationLoading(false)
-                displayTranslation(translation)
+
+                if (translations.isNotEmpty()) {
+                    // Reassemble all translated chunks into one string
+                    val fullTranslation = translations.joinToString(" ")
+                    displayTranslation(fullTranslation, showLimitWarning, partialError)
+                } else {
+                    showTranslationError("All translation requests failed.")
+                }
+
             } catch (e: IOException) {
                 showTranslationLoading(false)
                 showTranslationError(e.message ?: "Unknown error")
@@ -449,7 +503,43 @@ class MainActivity : AppCompatActivity() {
     }
 
     // -----------------------------------------------------------------------
-    // TRANSLATION: Makes the GET request to the MyMemory API
+    // TRANSLATION: Splits text into chunks of maxLength characters
+    // Tries to split on sentence boundaries first (. ! ?)
+    // Falls back to word boundaries if no sentence boundary found
+    // -----------------------------------------------------------------------
+    private fun splitIntoChunks(text: String, maxLength: Int): List<String> {
+        if (text.length <= maxLength) return listOf(text)
+
+        val chunks = mutableListOf<String>()
+        var remaining = text.trim()
+
+        while (remaining.length > maxLength) {
+            var splitAt = maxLength
+
+            // Try to find a sentence boundary (. ! ?) within the chunk
+            val sentenceEnd = remaining.lastIndexOf('.', maxLength)
+                .coerceAtLeast(remaining.lastIndexOf('!', maxLength))
+                .coerceAtLeast(remaining.lastIndexOf('?', maxLength))
+
+            if (sentenceEnd > 0) {
+                // Split after the sentence-ending punctuation
+                splitAt = sentenceEnd + 1
+            } else {
+                // No sentence boundary — fall back to last word boundary
+                val wordEnd = remaining.lastIndexOf(' ', maxLength)
+                if (wordEnd > 0) splitAt = wordEnd
+            }
+
+            chunks.add(remaining.substring(0, splitAt).trim())
+            remaining = remaining.substring(splitAt).trim()
+        }
+
+        if (remaining.isNotEmpty()) chunks.add(remaining)
+        return chunks
+    }
+
+    // -----------------------------------------------------------------------
+    // TRANSLATION: Makes the GET request to the MyMemory API for one chunk
     // MyMemory uses a simple GET with query parameters — no API key needed
     // Language pair "ga|en" means Irish → English
     // Must be called from a background thread (via withContext(Dispatchers.IO))
@@ -485,10 +575,30 @@ class MainActivity : AppCompatActivity() {
 
     // -----------------------------------------------------------------------
     // TRANSLATION: Shows the translated text in Box 2
+    // Optionally shows the daily limit warning and/or partial error message
     // -----------------------------------------------------------------------
-    private fun displayTranslation(translation: String) {
+    private fun displayTranslation(
+        translation: String,
+        showLimitWarning: Boolean,
+        partialError: Boolean
+    ) {
         binding.textTranslation.text = translation
         binding.cardTranslation.visibility = View.VISIBLE
+
+        // Show limit warning if text was 25% or more of daily allowance
+        if (showLimitWarning) {
+            binding.textTranslationWarning.visibility = View.VISIBLE
+            binding.textTranslationWarning.text =
+                getString(R.string.msg_translation_limit_warning)
+        } else {
+            binding.textTranslationWarning.visibility = View.GONE
+        }
+
+        // Show partial error message if one or more chunks failed
+        if (partialError) {
+            binding.cardError.visibility = View.VISIBLE
+            binding.textError.text = getString(R.string.msg_translation_partial)
+        }
     }
 
     // -----------------------------------------------------------------------
@@ -520,6 +630,7 @@ class MainActivity : AppCompatActivity() {
         binding.cardSpelling.visibility = View.GONE
         binding.containerErrors.removeAllViews()
         binding.containerSpelling.removeAllViews()
+        binding.textTranslationWarning.visibility = View.GONE
         spellingErrors = emptyList()
         currentSpellingIndex = -1
     }

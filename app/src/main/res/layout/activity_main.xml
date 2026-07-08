@@ -305,6 +305,15 @@
                         android:textAppearance="?attr/textAppearanceLabelLarge"
                         android:textColor="?attr/colorPrimary"
                         android:layout_marginBottom="8dp"/>
+                    <!-- Daily limit warning — only visible for long texts -->
+                    <TextView
+                        android:id="@+id/textTranslationWarning"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:visibility="gone"
+                        android:textAppearance="?attr/textAppearanceBodySmall"
+                        android:textColor="?attr/colorError"
+                        android:paddingBottom="8dp"/>
 
                     <!-- Clear button on its own row -->
                     <LinearLayout

@@ -46,4 +46,9 @@
     <string name="spelling_error_label">Focal mícheart / Misspelled word: </string>
     <string name="button_keep">Coimeád / Keep</string>
     <string name="msg_spelling_complete">Seiceáil litrithe críochnaithe! (Spelling check complete)</string>
+    <!-- Translation batching -->
+    <string name="msg_translation_progress">Aistriú %1$d de %2$d… / Translating %1$d of %2$d…</string>
+    <string name="msg_translation_limit_warning">Tabhair faoi deara: tá teorainn laethúil ann. Tá an téacs seo 25% nó níos mó den teorainn sin. / Note: a daily word limit applies. This text is 25% or more of that limit.</string>
+    <string name="msg_translation_partial">Aistriúchán páirteach. / Partial translation — an error occurred midway through.</string>
+
 </resources>
