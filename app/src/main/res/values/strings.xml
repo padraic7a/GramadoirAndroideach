@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">Gramadóir Andróidigh</string>
-    <string name="label_input">Iontráil do théacs / Enter your text</string>
-    <string name="hint_enter_irish">Clóscríobh i nGaeilge anseo…</string>
+    <string name="label_input">Scríobh do théacs / Enter your text</string>
+    <string name="hint_enter_irish">Clóscríobh i nGaeilge nó greamaigh anseo…</string>
     <string name="button_check">Seiceáil / Check</string>
     <string name="button_clear">Glan / Clear</string>
     <string name="button_translate">Aistrigh / Translate</string>
@@ -18,7 +18,7 @@
     <string name="msg_history_empty">Níl aon stair ann fós.\nNo history yet.\n\nCopy some Irish text to save it here.</string>
     <string name="msg_confirm_clear_all">An bhfuil tú cinnte? / Are you sure you want to clear all history?</string>
     <string name="msg_confirm_delete">Scrios an mhír seo? / Delete this item?</string>
-    <string name="button_confirm">OK</string>
+    <string name="button_confirm">CGL / OK</string>
     <string name="button_cancel">Cealaigh / Cancel</string>
     <string name="error_network">Earráid líonra. / Network error. Please check your connection and try again.\n\nDetails: %1$s</string>
     <string name="error_translation">Theip ar an aistriúchán. / Translation failed. Please try again.\n\nDetails: %1$s</string>
@@ -31,7 +31,7 @@
     <string name="menu_about">Eolas / About</string>
     <string name="about_version">Leagan / Version 1.0</string>
     <string name="about_intro">Placeholder text for now</string>
-    <string name="about_card_app_title">An App / The App</string>
+    <string name="about_card_app_title">An Aip / The App</string>
     <string name="about_card_app_body">Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris.</string>
     <string name="about_card_apis_title">Na APIs / The APIs</string>
     <string name="about_card_apis_body"> placeholder text for now</string>
